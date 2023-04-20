@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:rumble_futsal/main_layout.dart';
 import 'package:rumble_futsal/screens/auth_page.dart';
+import 'package:rumble_futsal/screens/booking_ground_page.dart';
+import 'package:rumble_futsal/screens/ground_details.dart';
+import 'package:rumble_futsal/screens/success_booked.dart';
 import 'package:rumble_futsal/utils/config.dart';
 
 void main() {
@@ -47,7 +50,9 @@ class MyApp extends StatelessWidget {
         '/' :(context) => const AuthPage(),
         //main layout after login
         'main' :(context) => const MainLayout(),
-
+        'ground_details': (context) => const GroundDetails(),
+        'booking_ground_page' :(context) => const BookingGroundPage(), 
+        'success_booking' :(context) => const BookingSuccess(),
       },
    
     );

@@ -100,7 +100,7 @@ class ScheduleCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.grey,
+        color: Colors.grey.shade200,
         borderRadius: BorderRadius.circular(10.0),
       ),
       width: double.infinity,
@@ -110,7 +110,7 @@ class ScheduleCard extends StatelessWidget {
         children: const <Widget>[
           Icon(
             Icons.calendar_today,
-            color: Colors.white,
+            color: Config.primaryColor,
             size: 15.0,
           ),
           SizedBox(
@@ -118,14 +118,14 @@ class ScheduleCard extends StatelessWidget {
           ),
           Text(
             'Monday, 11/11/2023',
-            style: TextStyle(color: Colors.white),
+            style: TextStyle(color: Config.primaryColor),
           ),
           SizedBox(
             width: 20.0,
           ),
           Icon(
             Icons.access_alarm,
-            color: Colors.white,
+            color: Config.primaryColor,
             size: 17.0,
           ),
           SizedBox(
@@ -134,7 +134,7 @@ class ScheduleCard extends StatelessWidget {
           Flexible(
               child: Text(
             '2:00 PM',
-            style: TextStyle(color: Colors.white),
+            style: TextStyle(color: Config.primaryColor),
           ))
         ],
       ),

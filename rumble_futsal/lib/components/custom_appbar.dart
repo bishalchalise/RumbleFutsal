@@ -9,6 +9,7 @@ class CustomAppBar extends StatefulWidget implements PreferredSizeWidget {
     this.route,
     this.icon,
     this.actions,
+    this.color,
   });
 
   @override
@@ -18,6 +19,7 @@ class CustomAppBar extends StatefulWidget implements PreferredSizeWidget {
   final String? route;
   final FaIcon? icon;
   final List<Widget>? actions;
+  final Color? color; 
 
   @override
   State<CustomAppBar> createState() => _CustomAppBarState();
@@ -28,7 +30,7 @@ class _CustomAppBarState extends State<CustomAppBar> {
   Widget build(BuildContext context) {
     return AppBar(
       automaticallyImplyLeading: true,
-      backgroundColor: Colors.white,
+      backgroundColor: widget.color ?? Colors.white,
       elevation: 0,
       title: Text(
         widget.appTitle!,
@@ -63,9 +65,9 @@ class _CustomAppBarState extends State<CustomAppBar> {
             )
           : null,
 
-          //if action is not set return null
+      //if action is not set return null
 
-          actions: widget.actions ?? null,
+      actions: widget.actions ?? null,
     );
   }
 }

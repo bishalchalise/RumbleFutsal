@@ -1,58 +1,68 @@
-import 'package:flutter/material.dart';
-import 'package:rumble_futsal/components/booking_card.dart';
+import 'dart:convert';
 
+import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../providers/dio_provider.dart';
 import '../utils/config.dart';
 
 class BookingPage extends StatefulWidget {
-  const BookingPage({super.key});
+  const BookingPage({
+    super.key,
+  });
 
   @override
   State<BookingPage> createState() => _BookingPageState();
 }
 //for booking status
 
-enum FilterStatus { upcoming, complete, cancel }
+enum FilterStatus {
+  upcoming,
+  complete,
+  cancel,
+}
 
 class _BookingPageState extends State<BookingPage> {
   FilterStatus status = FilterStatus.upcoming; //initial status
   Alignment _alignment = Alignment.centerLeft;
-  List<dynamic> schedules = [
-    {
-      "ground_name": "Ground 2",
-      "ground_profile": "assets/ground2.JPG",
-      "category": "5A Side",
-      "status": FilterStatus.upcoming,
-    },
-    {
-      "ground_name": "Ground 1",
-      "ground_profile": "assets/ground1.jpeg",
-      "category": "5A Side",
-      "status": FilterStatus.complete,
-    },
-    {
-      "ground_name": "Ground 3",
-      "ground_profile": "assets/ground3.jpeg",
-      "category": "7A Side",
-      "status": FilterStatus.cancel,
-    },
-  ];
+  List<dynamic> schedules = [];
+
+  //get booking details
+  Future<void> getBook() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token') ?? '';
+    final booking = await DioProvider().getBook(token);
+
+    if (booking != 'Error') {
+      setState(() {
+        schedules = json.decode(booking);
+        print(schedules);
+      });
+    }
+  }
+
+  @override
+  void initState() {
+    getBook();
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
     // Return Filtered Booking
     List<dynamic> filteredSchedules = schedules.where(
       (var schedule) {
-        // switch (schedule['status']) {
-        //   case 'available':
-        //     schedule['status'] = FilterStatus.available;
-        //     break;
-        //   case 'booked':
-        //     schedule['status'] = FilterStatus.booked;
-        //     break;
-        //   case 'cancel':
-        //     schedule['status'] = FilterStatus.cancel;
-        //     break;
-        // }
+        switch (schedule['status']) {
+          case 'upcoming':
+            schedule['status'] = FilterStatus.upcoming;
+            break;
+          case 'complete':
+            schedule['status'] = FilterStatus.complete;
+            break;
+          case 'cancel':
+            schedule['status'] = FilterStatus.cancel;
+            break;
+        }
         return schedule['status'] == status;
       },
     ).toList();
@@ -139,7 +149,7 @@ class _BookingPageState extends State<BookingPage> {
               child: ListView.builder(
                 itemCount: filteredSchedules.length,
                 itemBuilder: ((context, index) {
-                  var _schedule = filteredSchedules[index];
+                  var schedule = filteredSchedules[index];
                   bool isLastElement = filteredSchedules.length + 1 == index;
                   return Card(
                     shape: RoundedRectangleBorder(
@@ -163,8 +173,8 @@ class _BookingPageState extends State<BookingPage> {
                           Row(
                             children: [
                               CircleAvatar(
-                                backgroundImage:
-                                    AssetImage(_schedule['ground_profile']),
+                                backgroundImage: NetworkImage(
+                                    "http://127.0.0.1:8000${schedule['ground_profile']}"),
                               ),
                               const SizedBox(
                                 width: 10.0,
@@ -173,7 +183,7 @@ class _BookingPageState extends State<BookingPage> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    _schedule['ground_name'],
+                                    schedule['ground_name'],
                                     style: const TextStyle(
                                         color: Colors.black,
                                         fontWeight: FontWeight.w700),
@@ -182,7 +192,7 @@ class _BookingPageState extends State<BookingPage> {
                                     height: 5,
                                   ),
                                   Text(
-                                    _schedule['category'],
+                                    schedule['category'],
                                     style: const TextStyle(
                                         color: Colors.grey,
                                         fontSize: 12.0,
@@ -196,32 +206,25 @@ class _BookingPageState extends State<BookingPage> {
                             height: 15.0,
                           ),
                           // schedlue card
-                          const ScheduleCard(),
+                          ScheduleCard(
+                            date: schedule['date'],
+                            day: schedule['day'],
+                            time: schedule['time'],
+                          ),
                           const SizedBox(
                             height: 15.0,
                           ),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Expanded(
-                                child: OutlinedButton(
-                                  onPressed: () {},
-                                  child: const Text(
-                                    'Cancel',
-                                    style:
-                                        TextStyle(color: Config.primaryColor),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(
-                                width: 20.0,
-                              ),
+                             
                               Expanded(
                                 child: OutlinedButton(
                                   style: OutlinedButton.styleFrom(
                                     backgroundColor: Config.primaryColor,
                                   ),
-                                  onPressed: () {},
+                                  onPressed: () {
+                                  },
                                   child: const Text(
                                     'Rebook',
                                     style: TextStyle(color: Colors.white),
@@ -239,6 +242,60 @@ class _BookingPageState extends State<BookingPage> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class ScheduleCard extends StatelessWidget {
+  const ScheduleCard(
+      {super.key, required this.date, required this.day, required this.time});
+
+  final String date;
+  final String day;
+  final String time;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.grey.shade200,
+        borderRadius: BorderRadius.circular(10.0),
+      ),
+      width: double.infinity,
+      padding: const EdgeInsets.all(20.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: <Widget>[
+          const Icon(
+            Icons.calendar_today,
+            color: Config.primaryColor,
+            size: 15.0,
+          ),
+          const SizedBox(
+            width: 5.0,
+          ),
+          Text(
+            '$day, $date',
+            style: const TextStyle(color: Config.primaryColor),
+          ),
+          const SizedBox(
+            width: 20.0,
+          ),
+          const Icon(
+            Icons.access_alarm,
+            color: Config.primaryColor,
+            size: 17.0,
+          ),
+          const SizedBox(
+            width: 5.0,
+          ),
+          Flexible(
+              child: Text(
+            time,
+            style: const TextStyle(color: Config.primaryColor),
+          ))
+        ],
       ),
     );
   }

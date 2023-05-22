@@ -1,9 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:rating_dialog/rating_dialog.dart';
+import 'package:rumble_futsal/main.dart';
+import 'package:rumble_futsal/providers/dio_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../utils/config.dart';
 
 class BookingCard extends StatefulWidget {
-  const BookingCard({super.key});
+  const BookingCard({super.key, required this.color, required this.ground,});
+  final Map<String, dynamic> ground;
+ 
+
+  final Color color;
 
   @override
   State<BookingCard> createState() => _BookingCardState();
@@ -15,7 +23,7 @@ class _BookingCardState extends State<BookingCard> {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: Config.primaryColor,
+        color: widget.color,
         borderRadius: BorderRadius.circular(10.0),
       ),
       child: Padding(
@@ -24,8 +32,9 @@ class _BookingCardState extends State<BookingCard> {
           children: <Widget>[
             Row(
               children: [
-                const CircleAvatar(
-                  backgroundImage: AssetImage('assets/ground1.jpeg'),
+                CircleAvatar(
+                  backgroundImage: NetworkImage(
+                      "http://127.0.0.1:8000${widget.ground['ground_profile']}"),
                 ),
                 const SizedBox(
                   width: 10.0,
@@ -33,17 +42,17 @@ class _BookingCardState extends State<BookingCard> {
                 Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const <Widget>[
+                  children: <Widget>[
                     Text(
-                      'Ground 1',
-                      style: TextStyle(color: Colors.white),
+                      widget.ground["ground_name"],
+                      style: const TextStyle(color: Colors.white),
                     ),
-                    SizedBox(
+                    const SizedBox(
                       height: 2.0,
                     ),
                     Text(
-                      '5A Side',
-                      style: TextStyle(color: Colors.black),
+                      widget.ground["category"],
+                      style: const TextStyle(color: Colors.black),
                     )
                   ],
                 ),
@@ -51,7 +60,9 @@ class _BookingCardState extends State<BookingCard> {
             ),
             Config.spaceSmall,
             //schedule info
-            const ScheduleCard(),
+            ScheduleCard(
+              booking: widget.ground['bookings'],
+            ),
             Config.spaceSmall,
             //action button
             Row(
@@ -62,7 +73,22 @@ class _BookingCardState extends State<BookingCard> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.red,
                     ),
-                    onPressed: () {},
+                    onPressed: () async {
+                      final SharedPreferences prefs =
+                          await SharedPreferences.getInstance();
+                      final token = prefs.getString('token') ?? '';
+                      final rating = await DioProvider().cancelBooking(
+                       
+                       widget.ground['bookings']['id'],
+                      widget.ground['ground_id'],
+                        token,
+                        
+                      );
+                      //if successful, then refresh
+                      if (rating == 200 && rating != '') {
+                        MyApp.navigatorKey.currentState!.pushNamed('main');
+                      }
+                    },
                     child: const Text(
                       'Cancel',
                       style: TextStyle(color: Colors.white),
@@ -72,12 +98,58 @@ class _BookingCardState extends State<BookingCard> {
                 const SizedBox(
                   width: 20.0,
                 ),
-                  Expanded(
+                Expanded(
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blue,
                     ),
-                    onPressed: () {},
+                    //rating dialoge
+                    onPressed: () {
+                      showDialog(
+                          context: context,
+                          builder: (context) {
+                            return RatingDialog(
+                              initialRating: 1.0,
+                              title: const Text(
+                                'Rate Our Ground',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 25.0,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              message: const Text(
+                                'Please help us to rate our ground',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 15.0,
+                                ),
+                              ),
+                              image: const FlutterLogo(
+                                size: 100,
+                              ),
+                              submitButtonText: 'Submit',
+                              commentHint: 'Your Reviews',
+                              onSubmitted: (response) async {
+                                final SharedPreferences prefs =
+                                    await SharedPreferences.getInstance();
+                                final token = prefs.getString('token') ?? '';
+                                final rating = await DioProvider().storeReviews(
+                                  response.comment,
+                                  response.rating,
+                                  widget.ground['bookings']['id'],
+                                  widget.ground['ground_id'],
+                                  token,
+                                );
+                                //if successful, then refresh
+                                if (rating == 200 && rating != '') {
+                                  MyApp.navigatorKey.currentState!
+                                      .pushNamed('main');
+                                }
+                              },
+                            );
+                          });
+                    },
                     child: const Text(
                       'Completed',
                       style: TextStyle(color: Colors.white),
@@ -94,47 +166,48 @@ class _BookingCardState extends State<BookingCard> {
 }
 
 class ScheduleCard extends StatelessWidget {
-  const ScheduleCard({super.key});
+  const ScheduleCard({super.key, required this.booking});
+  final Map<String, dynamic> booking;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.grey.shade200,
+        color: Colors.grey,
         borderRadius: BorderRadius.circular(10.0),
       ),
       width: double.infinity,
       padding: const EdgeInsets.all(20.0),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
-        children: const <Widget>[
-          Icon(
+        children: <Widget>[
+          const Icon(
             Icons.calendar_today,
-            color: Config.primaryColor,
+            color: Colors.white,
             size: 15.0,
           ),
-          SizedBox(
+          const SizedBox(
             width: 5.0,
           ),
           Text(
-            'Monday, 11/11/2023',
-            style: TextStyle(color: Config.primaryColor),
+            '${booking['day']}, ${booking['date']}',
+            style: const TextStyle(color: Colors.white),
           ),
-          SizedBox(
+          const SizedBox(
             width: 20.0,
           ),
-          Icon(
+          const Icon(
             Icons.access_alarm,
-            color: Config.primaryColor,
+            color: Colors.white,
             size: 17.0,
           ),
-          SizedBox(
+          const SizedBox(
             width: 5.0,
           ),
           Flexible(
               child: Text(
-            '2:00 PM',
-            style: TextStyle(color: Config.primaryColor),
+            booking['time'],
+            style: const TextStyle(color: Colors.white),
           ))
         ],
       ),
